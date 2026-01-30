@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة مواقيت الصلاة</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo',sans-serif;}
+
+body{
+height:100vh;
+background:
+linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.55)),
+url("background.jpg");
+background-size:cover;
+background-position:center;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+body::before{
+content:"";
+position:fixed;
+inset:0;
+background-image:url("https://www.transparenttextures.com/patterns/islamic-pattern.png");
+opacity:.20;
+pointer-events:none;
+}
+
+.board{
+background:rgba(0,0,0,.65);
+width:95%;
+max-width:1100px;
+border-radius:30px;
+padding:30px;
+color:#fff;
+text-align:center;
+box-shadow:0 0 40px rgba(0,0,0,.7);
+}
+
+.logo{max-width:120px;margin-bottom:10px;}
+.title{font-size:32px;font-weight:700;color:#ffd700;margin-bottom:5px;}
+.hijri{font-size:22px;margin-bottom:10px;color:#bdf;}
+.clock{font-size:64px;font-weight:700;margin:15px 0;}
+.next{font-size:25px;color:#00ffd5;margin-bottom:20px;}
+.prayers{display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:28px;}
+.row{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.35);padding-bottom:6px;}
+.footer{margin-top:20px;font-size:15px;opacity:.85;}
+</style>
+</head>
+
+<body>
+
+<div class="board">
+<img src="logo.png" class="logo" />
+<div class="title">الجمعية الخيرية مسك الختام – الڨرارم ڨوڨة</div>
+<div class="hijri" id="hijriDate"></div>
+<div class="clock" id="clock">00:00:00</div>
+<div class="next" id="nextPrayer"></div>
+<div class="prayers" id="prayers"></div>
+<div class="footer">
+مواقيت مسجد سلمان الفارسي – القرارم قوقة (تحديث يومي)
+</div>
+</div>
+
+<script>
+// التاريخ الهجري
+function hijri(){
+const d=new Date();
+const h=new Intl.DateTimeFormat('ar-TN-u-ca-islamic',{day:'numeric',month:'long',year:'numeric'}).format(d);
+document.getElementById("hijriDate").innerText=h;
+}
+hijri();
+
+// قراءة JSON وعرض الجدول + العدّ التنازلي
+fetch('times.json')
+.then(response=>response.json())
+.then(data=>{
+const prayers=data.prayers;
+
+// إنشاء الجدول
+const box=document.getElementById("prayers");
+prayers.forEach(p=>{
+const d=document.createElement("div");
+d.className="row";
+d.innerHTML=`<span>${p.name}</span><span>${p.time}</span>`;
+box.appendChild(d);
+});
+
+// تحديث الساعة + العدّ التنازلي
+function update(){
+const n=new Date();
+document.getElementById("clock").innerText=n.toLocaleTimeString('ar-DZ');
+
+let next=null;
+let diff=null;
+
+prayers.forEach(p=>{
+const [ph,pm]=p.time.split(":");
+const t=new Date();
+t.setHours(ph,pm,0,0);
+if(t>n){const d=(t-n)/60000;if(diff===null||d<diff){diff=d;next=p;}}
+});
+
+if(!next){
+next=prayers[0];
+const [ph,pm]=next.time.split(":");
+const t=new Date();
+t.setDate(t.getDate()+1);
+t.setHours(ph,pm,0,0);
+diff=(t-n)/60000;
+}
+
+const hh=Math.floor(diff/60);
+const mm=Math.floor(diff%60);
+
+document.getElementById("nextPrayer").innerText=
+`الصلاة القادمة: ${next.name} بعد ${hh}س ${mm}د`;
+}
+
+setInterval(update,1000);
+update();
+});
+</script>
+
+</body>
+</html>
