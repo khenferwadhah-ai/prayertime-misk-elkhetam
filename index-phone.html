@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة مواقيت الصلاة</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Cairo',sans-serif;
+}
+
+body{
+height:100vh;
+background:
+linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.55)),
+url("bg.jpg") center center no-repeat;
+background-size:cover;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+body::before{
+content:"";
+position:fixed;
+inset:0;
+background-image:url("https://www.transparenttextures.com/patterns/islamic-pattern.png");
+opacity:.18;
+pointer-events:none;
+}
+
+.board{
+width:95%;
+max-width:420px;
+background:rgba(0,0,0,.68);
+border-radius:22px;
+padding:16px;
+color:white;
+text-align:center;
+}
+
+.logo{
+width:75px;
+margin-bottom:6px;
+}
+
+.title{
+font-size:19px;
+color:#ffd700;
+font-weight:700;
+margin-bottom:4px;
+}
+
+.date{
+font-size:14px;
+color:#cde;
+margin-bottom:5px;
+}
+
+.clock{
+font-size:34px;
+font-weight:700;
+margin:6px 0;
+}
+
+.next{
+font-size:16px;
+color:#00ffd5;
+margin-bottom:8px;
+}
+
+.row{
+display:flex;
+justify-content:space-between;
+padding:6px 0;
+border-bottom:1px solid rgba(255,255,255,.25);
+font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="board">
+
+<img src="logo2.png" class="logo">
+
+<div class="title">الجمعية الخيرية مسك الختام – الڨرارم ڨوڨة</div>
+
+<div class="date" id="dates"></div>
+
+<div class="clock" id="clock">00:00:00</div>
+
+<div class="next" id="nextPrayer"></div>
+
+<div id="prayers"></div>
+
+</div>
+
+<script>
+// التاريخ
+function updateDates(){
+const now=new Date();
+
+const miladi=now.toLocaleDateString('ar-DZ',{
+weekday:'long',year:'numeric',month:'long',day:'numeric'
+});
+
+const hijri=new Intl.DateTimeFormat('ar-TN-u-ca-islamic',{
+day:'numeric',month:'long',year:'numeric'
+}).format(now);
+
+document.getElementById("dates").innerText =
+miladi+" | "+hijri;
+}
+updateDates();
+
+// المواقيت
+fetch("times.json")
+.then(r=>r.json())
+.then(data=>{
+const prayers=data.prayers;
+const box=document.getElementById("prayers");
+
+prayers.forEach(p=>{
+const d=document.createElement("div");
+d.className="row";
+d.innerHTML=`<span>${p.name}</span><span>${p.time}</span>`;
+box.appendChild(d);
+});
+
+function update(){
+const now=new Date();
+document.getElementById("clock").innerText=
+now.toLocaleTimeString('ar-DZ');
+
+let next=null,diff=null;
+
+prayers.forEach(p=>{
+const [h,m]=p.time.split(":");
+const t=new Date();
+t.setHours(h,m,0,0);
+if(t>now){
+const d=(t-now)/60000;
+if(diff===null||d<diff){diff=d;next=p;}
+}
+});
+
+if(!next){
+next=prayers[0];
+const [h,m]=next.time.split(":");
+const t=new Date();
+t.setDate(t.getDate()+1);
+t.setHours(h,m,0,0);
+diff=(t-now)/60000;
+}
+
+document.getElementById("nextPrayer").innerText=
+`الصلاة القادمة: ${next.name} بعد ${Math.floor(diff/60)}س ${Math.floor(diff%60)}د`;
+}
+
+setInterval(update,1000);
+update();
+});
+</script>
+
+</body>
+</html>
